@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qwen3-VL 動画アノテーション</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Qwen3-VL 動画アノテーション</h1>
+
+    <!-- 設定 -->
+    <section class="panel" id="settings-panel">
+      <div class="settings-row">
+        <label>
+          サーバーURL
+          <input type="text" id="server-url" value="http://localhost:8080">
+        </label>
+        <label>
+          セグメント間隔(秒)
+          <input type="number" id="segment-interval" value="3" min="1" max="30" step="1">
+        </label>
+      </div>
+      <div class="settings-row">
+        <label class="file-label">
+          動画ファイル
+          <input type="file" id="video-file" accept="video/*">
+        </label>
+        <button id="process-btn" disabled>処理開始</button>
+        <button id="cancel-btn" hidden>キャンセル</button>
+        <button id="export-btn" hidden>JSONダウンロード</button>
+      </div>
+      <!-- 進捗 -->
+      <div id="progress-area" hidden>
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <span id="progress-text"></span>
+      </div>
+      <div id="status-message" hidden></div>
+    </section>
+
+    <!-- プレイヤー -->
+    <section class="panel" id="player-panel" hidden>
+      <video id="player" controls playsinline></video>
+      <!-- 現在のアノテーション -->
+      <div id="current-annotation">
+        <span id="current-annotation-text">&nbsp;</span>
+      </div>
+    </section>
+
+    <!-- タイムライン -->
+    <section class="panel" id="timeline-panel" hidden>
+      <h2>タイムライン</h2>
+      <ol id="timeline-list"></ol>
+    </section>
+  </main>
+
+  <!-- フレーム抽出用(非表示) -->
+  <video id="extract-video" muted playsinline hidden></video>
+
+  <script src="app.js"></script>
+</body>
+</html>
