@@ -259,7 +259,7 @@ processBtn.addEventListener("click", async () => {
       // fetch の接続失敗
       showStatus(
         "llama-server に接続できません。別のターミナルで以下を実行してください:\n" +
-          "  ./run-server.sh\n" +
+          "  ./run-server.sh(macOS)/ run-server.bat(Windows)\n" +
           `(接続先: ${serverUrl})`,
         "error"
       );

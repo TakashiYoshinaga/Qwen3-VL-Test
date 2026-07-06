@@ -4,11 +4,12 @@
 
 ## 必要なもの
 
-- macOS(Apple Silicon 推奨)
-- llama.cpp(`brew install llama.cpp`)
-- Python 3(フロントエンド配信用、macOS 標準)
+- llama.cpp
+  - macOS: `brew install llama.cpp`
+  - Windows: `winget install llama.cpp`(または [GitHub Releases](https://github.com/ggml-org/llama.cpp/releases) のビルド済みバイナリを展開して PATH を通す)
+- Python 3(フロントエンド配信用。macOS は標準搭載、Windows は [python.org](https://www.python.org/downloads/) か `winget install Python.Python.3.12`)
 
-## 使い方
+## 使い方(macOS)
 
 ### 1. モデルサーバーを起動
 
@@ -16,7 +17,7 @@
 ./run-server.sh
 ```
 
-初回はモデル(約3GB)+ mmproj が Hugging Face から自動ダウンロードされる。
+初回はモデル(約2.4GB)+ mmproj が Hugging Face から自動ダウンロードされる。
 `server is listening on http://127.0.0.1:8080` と出たら準備完了。
 
 ### 2. フロントエンドを配信
@@ -26,6 +27,35 @@
 ```sh
 python3 -m http.server 8000
 ```
+
+ブラウザで http://localhost:8000 を開く。
+
+## 使い方(Windows)
+
+### 1. モデルサーバーを起動
+
+コマンドプロンプト(または PowerShell)でこのフォルダに移動し:
+
+```bat
+run-server.bat
+```
+
+初回はモデル(約2.4GB)+ mmproj が自動ダウンロードされる。
+`server is listening on http://127.0.0.1:8080` と出たら準備完了。
+
+> **GPU について**: NVIDIA GPU で使う場合は GitHub Releases の CUDA 版バイナリ
+> (`llama-*-bin-win-cuda-*.zip`)を、それ以外の GPU は Vulkan 版を使うと高速。
+> CPU 版でも動作するが処理時間は長くなる(`-ngl 99` は CPU 版では無視されるだけで無害)。
+
+### 2. フロントエンドを配信
+
+別のコマンドプロンプトでこのフォルダに移動し:
+
+```bat
+py -m http.server 8000
+```
+
+(`py` が無い場合は `python -m http.server 8000`)
 
 ブラウザで http://localhost:8000 を開く。
 

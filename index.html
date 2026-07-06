@@ -39,20 +39,22 @@
       <div id="status-message" hidden></div>
     </section>
 
-    <!-- プレイヤー -->
-    <section class="panel" id="player-panel" hidden>
-      <video id="player" controls playsinline></video>
-      <!-- 現在のアノテーション -->
-      <div id="current-annotation">
-        <span id="current-annotation-text">&nbsp;</span>
-      </div>
-    </section>
+    <div id="content-area">
+      <!-- プレイヤー -->
+      <section class="panel" id="player-panel" hidden>
+        <video id="player" controls playsinline></video>
+        <!-- 現在のアノテーション -->
+        <div id="current-annotation">
+          <span id="current-annotation-text">&nbsp;</span>
+        </div>
+      </section>
 
-    <!-- タイムライン -->
-    <section class="panel" id="timeline-panel" hidden>
-      <h2>タイムライン</h2>
-      <ol id="timeline-list"></ol>
-    </section>
+      <!-- タイムライン(動画の右) -->
+      <section class="panel" id="timeline-panel" hidden>
+        <h2>タイムライン</h2>
+        <ol id="timeline-list"></ol>
+      </section>
+    </div>
   </main>
 
   <!-- フレーム抽出用(非表示) -->
