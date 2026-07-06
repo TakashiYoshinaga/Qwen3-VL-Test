@@ -153,8 +153,35 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button.secondary {
+  background: #555c66;
+  font-weight: 500;
+}
+
 #cancel-btn {
   background: #555c66;
+}
+
+.prompt-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+#system-prompt {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 5em;
 }
 
 #export-btn {
@@ -226,20 +253,28 @@ progress {
   font-weight: 700;
 }
 
+/* リストを絶対配置にして中身の量がパネルの高さに影響しないようにし、
+   パネルは動画側の高さに揃える。あふれた分はリスト内部でスクロール */
+.timeline-scroll {
+  flex: 1;
+  position: relative;
+  min-height: 160px;
+}
+
 #timeline-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  /* height:0 + flex:1 で、リストの内容量ではなく動画側の高さにパネルを揃える */
-  flex: 1;
-  height: 0;
+  position: absolute;
+  inset: 0;
   overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
 @media (max-width: 900px) {
-  #timeline-list {
-    height: auto;
-    max-height: 320px;
+  .timeline-scroll {
+    flex: none;
+    height: 320px;
   }
 }
 

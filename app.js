@@ -2,11 +2,15 @@
 // 動画をセグメントに分割し、各セグメントのフレームを llama-server に送って
 // 「何をしているか」の一言説明を取得し、再生時刻に合わせて表示する。
 
-const SYSTEM_PROMPT =
-  "これは一人称視点動画から連続して切り出したフレームです。" +
-  "撮影者(カメラの持ち主)が何をしているかを日本語で一言(短い文)で答えてください。" +
-  "例:「猫を撫でた」「ドアを開けた」「コップに水を注いだ」。" +
+// UI 未入力時に使う既定のシステムプロンプト(汎用。一人称視点に限らない)
+const DEFAULT_SYSTEM_PROMPT =
+  "これは動画から連続して切り出した複数のフレームです。" +
+  "映っている人が何をしているか(何が行われているか)を日本語で一言(短い文)で答えてください。" +
+  "例:「猫を撫でる」「ドアを開ける」「コップに水を注ぐ」。" +
   "説明文のみを出力し、前置きや補足は書かないでください。";
+
+// 各セグメントのユーザーメッセージに添えるテキスト
+const USER_PROMPT = "何が行われていますか?一言で。";
 
 const FRAMES_PER_SEGMENT = 3; // セグメントの始・中・終から1枚ずつ
 const FRAME_MAX_SIZE = 512;   // 長辺の縮小サイズ(px)
@@ -29,6 +33,10 @@ const currentAnnotationText = $("current-annotation-text");
 const timelinePanel = $("timeline-panel");
 const timelineList = $("timeline-list");
 const extractVideo = $("extract-video");
+const togglePromptBtn = $("toggle-prompt-btn");
+const promptArea = $("prompt-area");
+const systemPromptInput = $("system-prompt");
+const resetPromptBtn = $("reset-prompt-btn");
 
 // ---- 状態 ----
 let videoURL = null;
@@ -128,12 +136,12 @@ async function captureFrame(time) {
 }
 
 // ---- 推論リクエスト ----
-async function describeSegment(serverUrl, frames) {
+async function describeSegment(serverUrl, systemPrompt, frames) {
   const content = frames.map((dataUrl) => ({
     type: "image_url",
     image_url: { url: dataUrl },
   }));
-  content.push({ type: "text", text: "撮影者は何をしていますか?一言で。" });
+  content.push({ type: "text", text: USER_PROMPT });
 
   abortController = new AbortController();
   const res = await fetch(`${serverUrl}/v1/chat/completions`, {
@@ -142,7 +150,7 @@ async function describeSegment(serverUrl, frames) {
     signal: abortController.signal,
     body: JSON.stringify({
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content },
       ],
       temperature: 0,
@@ -179,12 +187,20 @@ function addTimelineItem(annotation, index) {
   timelinePanel.hidden = false;
 }
 
+// ページ全体ではなく timelineList の内側だけをスクロールする。
+// アクティブ項目を枠の下端に寄せることで、過去の項目が上へ流れていく表示になる。
+function scrollListItemIntoView(li) {
+  const target = li.offsetTop + li.offsetHeight - timelineList.clientHeight;
+  timelineList.scrollTop = Math.max(0, target);
+}
+
 // ---- 処理本体 ----
 processBtn.addEventListener("click", async () => {
   if (processing || !videoURL) return;
 
   const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
   const interval = Math.max(1, Number(intervalInput.value) || 3);
+  const systemPrompt = systemPromptInput.value.trim() || DEFAULT_SYSTEM_PROMPT;
 
   processing = true;
   cancelRequested = false;
@@ -235,7 +251,7 @@ processBtn.addEventListener("click", async () => {
       }
 
       if (cancelRequested) break;
-      const text = await describeSegment(serverUrl, frames);
+      const text = await describeSegment(serverUrl, systemPrompt, frames);
 
       const annotation = { start, end, text };
       annotations.push(annotation);
@@ -295,7 +311,7 @@ player.addEventListener("timeupdate", () => {
     const li = items[index];
     if (li) {
       li.classList.add("active");
-      li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      scrollListItemIntoView(li);
     }
   } else {
     currentAnnotationText.innerHTML = "&nbsp;";
@@ -312,4 +328,19 @@ exportBtn.addEventListener("click", () => {
   a.download = "annotations.json";
   a.click();
   URL.revokeObjectURL(a.href);
+});
+
+// ---- システムプロンプト設定 ----
+systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
+
+togglePromptBtn.addEventListener("click", () => {
+  const willShow = promptArea.hidden;
+  promptArea.hidden = !willShow;
+  togglePromptBtn.textContent = willShow
+    ? "システムプロンプトを隠す"
+    : "システムプロンプトを表示";
+});
+
+resetPromptBtn.addEventListener("click", () => {
+  systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
 });

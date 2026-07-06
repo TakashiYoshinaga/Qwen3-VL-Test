@@ -31,6 +31,19 @@
         <button id="cancel-btn" hidden>キャンセル</button>
         <button id="export-btn" hidden>JSONダウンロード</button>
       </div>
+      <!-- システムプロンプト設定(表示/非表示を切り替え) -->
+      <div class="settings-row">
+        <button id="toggle-prompt-btn" type="button" class="secondary">システムプロンプトを表示</button>
+      </div>
+      <div id="prompt-area" hidden>
+        <label class="prompt-label">
+          システムプロンプト(モデルへの指示)
+          <textarea id="system-prompt" rows="5"></textarea>
+        </label>
+        <div class="settings-row">
+          <button id="reset-prompt-btn" type="button" class="secondary">既定に戻す</button>
+        </div>
+      </div>
       <!-- 進捗 -->
       <div id="progress-area" hidden>
         <progress id="progress-bar" value="0" max="100"></progress>
@@ -52,7 +65,10 @@
       <!-- タイムライン(動画の右) -->
       <section class="panel" id="timeline-panel" hidden>
         <h2>タイムライン</h2>
-        <ol id="timeline-list"></ol>
+        <!-- 絶対配置のリストを包むことで、リストの中身が枠の高さに影響しないようにする -->
+        <div class="timeline-scroll">
+          <ol id="timeline-list"></ol>
+        </div>
       </section>
     </div>
   </main>
