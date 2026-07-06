@@ -9,8 +9,8 @@ const DEFAULT_SYSTEM_PROMPT =
   "例:「猫を撫でる」「ドアを開ける」「コップに水を注ぐ」。" +
   "説明文のみを出力し、前置きや補足は書かないでください。";
 
-// 各セグメントのユーザーメッセージに添えるテキスト
-const USER_PROMPT = "何が行われていますか?一言で。";
+// UI 未入力時に使う既定のユーザープロンプト(各セグメントの画像に添える質問)
+const DEFAULT_USER_PROMPT = "何が行われていますか?一言で。";
 
 const FRAMES_PER_SEGMENT = 3; // セグメントの始・中・終から1枚ずつ
 const FRAME_MAX_SIZE = 512;   // 長辺の縮小サイズ(px)
@@ -36,6 +36,7 @@ const extractVideo = $("extract-video");
 const togglePromptBtn = $("toggle-prompt-btn");
 const promptArea = $("prompt-area");
 const systemPromptInput = $("system-prompt");
+const userPromptInput = $("user-prompt");
 const resetPromptBtn = $("reset-prompt-btn");
 
 // ---- 状態 ----
@@ -136,12 +137,12 @@ async function captureFrame(time) {
 }
 
 // ---- 推論リクエスト ----
-async function describeSegment(serverUrl, systemPrompt, frames) {
+async function describeSegment(serverUrl, systemPrompt, userPrompt, frames) {
   const content = frames.map((dataUrl) => ({
     type: "image_url",
     image_url: { url: dataUrl },
   }));
-  content.push({ type: "text", text: USER_PROMPT });
+  content.push({ type: "text", text: userPrompt });
 
   abortController = new AbortController();
   const res = await fetch(`${serverUrl}/v1/chat/completions`, {
@@ -201,6 +202,7 @@ processBtn.addEventListener("click", async () => {
   const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
   const interval = Math.max(1, Number(intervalInput.value) || 3);
   const systemPrompt = systemPromptInput.value.trim() || DEFAULT_SYSTEM_PROMPT;
+  const userPrompt = userPromptInput.value.trim() || DEFAULT_USER_PROMPT;
 
   processing = true;
   cancelRequested = false;
@@ -251,7 +253,7 @@ processBtn.addEventListener("click", async () => {
       }
 
       if (cancelRequested) break;
-      const text = await describeSegment(serverUrl, systemPrompt, frames);
+      const text = await describeSegment(serverUrl, systemPrompt, userPrompt, frames);
 
       const annotation = { start, end, text };
       annotations.push(annotation);
@@ -330,17 +332,19 @@ exportBtn.addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 });
 
-// ---- システムプロンプト設定 ----
+// ---- プロンプト設定 ----
 systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
+userPromptInput.value = DEFAULT_USER_PROMPT;
 
 togglePromptBtn.addEventListener("click", () => {
   const willShow = promptArea.hidden;
   promptArea.hidden = !willShow;
   togglePromptBtn.textContent = willShow
-    ? "システムプロンプトを隠す"
-    : "システムプロンプトを表示";
+    ? "プロンプト設定を隠す"
+    : "プロンプト設定を表示";
 });
 
 resetPromptBtn.addEventListener("click", () => {
   systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
+  userPromptInput.value = DEFAULT_USER_PROMPT;
 });

@@ -171,7 +171,7 @@ button.secondary {
   margin-bottom: 10px;
 }
 
-#system-prompt {
+.prompt-label textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -181,7 +181,7 @@ button.secondary {
   font-family: inherit;
   line-height: 1.5;
   resize: vertical;
-  min-height: 5em;
+  min-height: 2.5em;
 }
 
 #export-btn {
