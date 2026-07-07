@@ -47,6 +47,17 @@ run-server.bat
 > (`llama-*-bin-win-cuda-*.zip`)を、それ以外の GPU は Vulkan 版を使うと高速。
 > CPU 版でも動作するが処理時間は長くなる(`-ngl 99` は CPU 版では無視されるだけで無害)。
 
+LLAMA.cppを使う場合は下記のようなコマンドを使う必要があります。  
+>cd C:\llama-cpp  
+>
+>llama-server.exe ^
+>  -m "C:\Users\\<UserName\>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" ^
+>  --mmproj "C:\Users\\<UserName\>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\mmproj-F32.gguf" ^
+>  --host 0.0.0.0 ^
+>  --port 8080 ^
+>  --ui-mcp-proxy ^
+>  --reasoning off
+
 ### 2. フロントエンドを配信
 
 別のコマンドプロンプトでこのフォルダに移動し:
