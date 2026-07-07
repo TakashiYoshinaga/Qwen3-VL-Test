@@ -50,13 +50,13 @@ run-server.bat
 LLAMA.cppを使う場合は下記のようなコマンドを使う必要があります。  
 >cd C:\llama-cpp  
 >
->llama-server.exe ^
->  -m "C:\Users\\<UserName\>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" ^
->  --mmproj "C:\Users\\<UserName\>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\mmproj-F32.gguf" ^
->  --host 0.0.0.0 ^
->  --port 8080 ^
->  --ui-mcp-proxy ^
->  --reasoning off
+>llama-server.exe ^  
+>  -m "C:\Users\\<UserName\>\\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" ^  
+>  --mmproj "C:\Users\\<UserName\>\\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\mmproj-F32.gguf" ^  
+>  --host 0.0.0.0 ^  
+>  --port 8080 ^  
+>  --ui-mcp-proxy ^  
+>  --reasoning off  
 
 ### 2. フロントエンドを配信
 
