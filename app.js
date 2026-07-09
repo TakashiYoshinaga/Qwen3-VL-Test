@@ -37,6 +37,7 @@ const togglePromptBtn = $("toggle-prompt-btn");
 const promptArea = $("prompt-area");
 const systemPromptInput = $("system-prompt");
 const userPromptInput = $("user-prompt");
+const ignoreWordsInput = $("ignore-words");
 const resetPromptBtn = $("reset-prompt-btn");
 
 // ---- 状態 ----
@@ -52,6 +53,11 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// 無視ワード比較用の正規化: 前後の空白と末尾の句読点・記号を除去
+function normalizeLabel(s) {
+  return s.trim().replace(/[。..、,、!?!?\s]+$/u, "");
 }
 
 function showStatus(text, kind) {
@@ -203,6 +209,11 @@ processBtn.addEventListener("click", async () => {
   const interval = Math.max(1, Number(intervalInput.value) || 3);
   const systemPrompt = systemPromptInput.value.trim() || DEFAULT_SYSTEM_PROMPT;
   const userPrompt = userPromptInput.value.trim() || DEFAULT_USER_PROMPT;
+  const ignoreWords = ignoreWordsInput.value
+    .split(",")
+    .map(normalizeLabel)
+    .filter(Boolean);
+  let ignoredCount = 0;
 
   processing = true;
   cancelRequested = false;
@@ -255,18 +266,24 @@ processBtn.addEventListener("click", async () => {
       if (cancelRequested) break;
       const text = await describeSegment(serverUrl, systemPrompt, userPrompt, frames);
 
-      const annotation = { start, end, text };
-      annotations.push(annotation);
-      addTimelineItem(annotation, annotations.length - 1);
+      // 無視ワードに一致したセグメントはタイムラインに追加しない
+      if (ignoreWords.includes(normalizeLabel(text))) {
+        ignoredCount++;
+      } else {
+        const annotation = { start, end, text };
+        annotations.push(annotation);
+        addTimelineItem(annotation, annotations.length - 1);
+      }
 
       progressBar.value = i + 1;
       progressText.textContent = `${i + 1} / ${segments.length}`;
     }
 
+    const ignoredNote = ignoredCount > 0 ? `、${ignoredCount} 件を無視` : "";
     if (cancelRequested) {
       showStatus("処理をキャンセルしました。途中までのアノテーションは利用できます。", "info");
     } else {
-      showStatus(`処理が完了しました(${annotations.length} セグメント)。再生するとアノテーションが表示されます。`, "info");
+      showStatus(`処理が完了しました(${segments.length} セグメント中 ${annotations.length} 件を表示${ignoredNote})。再生するとアノテーションが表示されます。`, "info");
     }
     if (annotations.length > 0) exportBtn.hidden = false;
   } catch (err) {
@@ -347,4 +364,5 @@ togglePromptBtn.addEventListener("click", () => {
 resetPromptBtn.addEventListener("click", () => {
   systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
   userPromptInput.value = DEFAULT_USER_PROMPT;
+  ignoreWordsInput.value = "";
 });

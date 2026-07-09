@@ -44,6 +44,10 @@
           ユーザープロンプト(各セグメントの画像に添える質問)
           <textarea id="user-prompt" rows="2"></textarea>
         </label>
+        <label class="prompt-label">
+          無視するワード(カンマ区切り。出力が一致したセグメントはタイムラインに追加しない)
+          <input type="text" id="ignore-words" placeholder="例: その他, 何も行われていない">
+        </label>
         <div class="settings-row">
           <button id="reset-prompt-btn" type="button" class="secondary">既定に戻す</button>
         </div>
