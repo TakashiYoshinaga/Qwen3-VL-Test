@@ -4,6 +4,10 @@ English | [日本語](README_JP.md)
 
 A local web app that takes a recorded video (e.g., first-person footage), has Qwen3-VL-4B (via llama.cpp) describe "what is happening" in one short phrase per segment, and shows that description under the video in sync with playback.
 
+[![Demo video](https://img.youtube.com/vi/NyjEXgAM1rk/maxresdefault.jpg)](https://www.youtube.com/watch?v=NyjEXgAM1rk)
+
+[▶ Demo video (YouTube)](https://www.youtube.com/watch?v=NyjEXgAM1rk)
+
 ## Requirements
 
 - llama.cpp

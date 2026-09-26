@@ -4,6 +4,10 @@
 
 撮影済みの動画(一人称視点など)を渡すと、Qwen3-VL-4B(llama.cpp)が「何をしているか」をセグメントごとに一言で説明し、再生時刻に合わせて動画の下に表示するローカルWebアプリ。
 
+[![デモ動画](https://img.youtube.com/vi/NyjEXgAM1rk/maxresdefault.jpg)](https://www.youtube.com/watch?v=NyjEXgAM1rk)
+
+[▶ デモ動画(YouTube)](https://www.youtube.com/watch?v=NyjEXgAM1rk)
+
 ## 必要なもの
 
 - llama.cpp
