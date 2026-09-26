@@ -1,140 +1,152 @@
-# Qwen3-VL 動画アノテーション
+# Qwen3-VL Video Annotation
 
-撮影済みの動画(一人称視点など)を渡すと、Qwen3-VL-4B(llama.cpp)が「何をしているか」をセグメントごとに一言で説明し、再生時刻に合わせて動画の下に表示するローカルWebアプリ。
+English | [日本語](README_JP.md)
 
-## 必要なもの
+A local web app that takes a recorded video (e.g., first-person footage), has Qwen3-VL-4B (via llama.cpp) describe "what is happening" in one short phrase per segment, and shows that description under the video in sync with playback.
+
+## Requirements
 
 - llama.cpp
   - macOS: `brew install llama.cpp`
-  - Windows: `winget install llama.cpp`(または [GitHub Releases](https://github.com/ggml-org/llama.cpp/releases) のビルド済みバイナリを展開して PATH を通す)
-- Python 3(フロントエンド配信用。macOS は標準搭載、Windows は [python.org](https://www.python.org/downloads/) か `winget install Python.Python.3.12`)
+  - Windows: `winget install llama.cpp` (or extract a prebuilt binary from [GitHub Releases](https://github.com/ggml-org/llama.cpp/releases) and add it to your PATH)
+- Python 3 (to serve the frontend; preinstalled on macOS, on Windows get it from [python.org](https://www.python.org/downloads/) or `winget install Python.Python.3.12`)
 
-## 使い方(macOS)
+## Usage (macOS)
 
-### 1. モデルサーバーを起動
+### 1. Start the model server
 
 ```sh
 ./run-server.sh
 ```
 
-初回はモデル(約2.4GB)+ mmproj が Hugging Face から自動ダウンロードされる。
-`server is listening on http://127.0.0.1:8080` と出たら準備完了。
+On the first run, the model (about 2.5 GB) and the mmproj file are downloaded automatically from Hugging Face.
+The server is ready when you see `server is listening on http://127.0.0.1:8080`.
 
-### 2. フロントエンドを配信
+### 2. Serve the frontend
 
-別のターミナルで:
+In another terminal:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-ブラウザで http://localhost:8000 を開く。
+Open http://localhost:8000 in your browser.
 
-## 使い方(Windows)
+## Usage (Windows)
 
-### 1. モデルサーバーを起動
+### 1. Start the model server
 
-コマンドプロンプト(または PowerShell)でこのフォルダに移動し:
+In Command Prompt (or PowerShell), move to this folder and run:
 
 ```bat
 run-server.bat
 ```
 
-初回はモデル(約2.4GB)+ mmproj が自動ダウンロードされる。
-`server is listening on http://127.0.0.1:8080` と出たら準備完了。
+On the first run, the model (about 2.5 GB) and the mmproj file are downloaded automatically.
+The server is ready when you see `server is listening on http://127.0.0.1:8080`.
 
-> **GPU について**: NVIDIA GPU で使う場合は GitHub Releases の CUDA 版バイナリ
-> (`llama-*-bin-win-cuda-*.zip`)を、それ以外の GPU は Vulkan 版を使うと高速。
-> CPU 版でも動作するが処理時間は長くなる(`-ngl 99` は CPU 版では無視されるだけで無害)。
+> **About GPUs**: For NVIDIA GPUs, use the CUDA build from GitHub Releases
+> (`llama-*-bin-win-cuda-*.zip`); for other GPUs, the Vulkan build is faster.
+> The CPU build also works but is slower (`-ngl 99` is simply ignored by the CPU build and is harmless).
 
-LLAMA.cppを使う場合は下記のようなコマンドを使う必要があります。  
->cd C:\llama-cpp  
->
->llama-server.exe ^  
->  -m "C:\Users\\<UserName\>\\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" ^  
->  --mmproj "C:\Users\\<UserName\>\\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\mmproj-F32.gguf" ^  
->  --host 0.0.0.0 ^  
->  --port 8080 ^  
->  --ui-mcp-proxy ^  
->  --reasoning off  
+To run llama-server directly with model files you already have locally (for example, ones downloaded by LM Studio), use a command like this:
 
-### 2. フロントエンドを配信
+```bat
+cd C:\llama-cpp
 
-別のコマンドプロンプトでこのフォルダに移動し:
+llama-server.exe ^
+  -m "C:\Users\<UserName>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\Qwen3-VL-4B-Instruct-Q4_K_M.gguf" ^
+  --mmproj "C:\Users\<UserName>\.lmstudio\models\unsloth\Qwen3-VL-4B-Instruct-GGUF\mmproj-F32.gguf" ^
+  --host 0.0.0.0 ^
+  --port 8080 ^
+  --ui-mcp-proxy ^
+  --reasoning off
+```
+
+### 2. Serve the frontend
+
+In another Command Prompt, move to this folder and run:
 
 ```bat
 py -m http.server 8000
 ```
 
-(`py` が無い場合は `python -m http.server 8000`)
+(If `py` is not available, use `python -m http.server 8000`.)
 
-ブラウザで http://localhost:8000 を開く。
+Open http://localhost:8000 in your browser.
 
-### 3. 動画を処理
+### 3. Process a video
 
-1. 動画ファイルを選択
-2. 必要ならセグメント間隔(既定 3 秒)を調整
-3. 必要なら「プロンプト設定」からシステム/ユーザープロンプトを編集できる。
-   「無視するワード」(カンマ区切り)に一致した出力のセグメントは、タイムラインにも
-   JSONにも含まれない(末尾の句読点を除いた完全一致で判定)
-4. 「処理開始」→ 進捗バーが完了するまで待つ
-5. 再生すると、動画下のアノテーション欄に現在の行動説明が表示される
-6. タイムラインの行をクリックするとその時刻へジャンプ
-7. 「JSONダウンロード」で `{start, end, text}` の配列を保存できる
+1. Select a video file
+2. Adjust the segment interval if needed (default: 3 seconds)
+3. If needed, edit the system/user prompts under "プロンプト設定" (Prompt settings).
+   Segments whose output matches one of the "無視するワード" (Ignore words, comma-separated)
+   are excluded from both the timeline and the JSON (exact match after stripping trailing punctuation)
+4. Click "処理開始" (Start) and wait for the progress bar to finish
+5. During playback, the current action description is shown in the annotation area under the video
+6. Click a row in the timeline to jump to that time
+7. Click "JSONダウンロード" (Download JSON) to save an array of `{start, end, text}`
 
-## 仕組み
+> The UI and the default prompts are in Japanese, so the model answers in Japanese by default.
+> To get English output, rewrite the system/user prompts in English.
 
-- 動画を N 秒のセグメントに分割し、各セグメントから 3 フレームを `<canvas>` で抽出(長辺 512px に縮小)
-- フレームを llama-server の OpenAI 互換 API(`/v1/chat/completions`)へ送信し、一言説明を取得
-- 再生中は `timeupdate` イベントで現在時刻に該当するセグメントの説明を表示
+## How it works
 
-## プロンプト例(分類タスク)
+- The video is split into N-second segments, and 3 frames are extracted from each segment with `<canvas>` (downscaled so the long side is 512 px)
+- The frames are sent to llama-server's OpenAI-compatible API (`/v1/chat/completions`) to get a one-phrase description
+- During playback, the `timeupdate` event is used to show the description of the segment at the current time
 
-一言説明ではなく、決まったラベルに分類したい場合の例。VRでの消火訓練映像を
-「状況を把握」「火を確認」「消火器を確認」「消火器を使用」「消火中」「消火完了」「その他」
-の7段階に分類するケース。
+## Example prompts (classification task)
 
-**システムプロンプト:**
+An example for classifying each segment into fixed labels instead of free-form descriptions:
+classifying VR fire-extinguishing training footage into five labels —
+"Checking the surroundings", "Checking the extinguisher", "Extinguishing", "Extinguishing complete", and "Other".
 
-```
-あなたはVR消火訓練映像を観察し、今その瞬間に行われている行動を分類するアシスタントです。
-与えられた複数フレームを見て、次の5つのラベルの中から最も当てはまるものを1つだけ選び、
-そのラベルの文字列だけを出力してください。チェックマークのUIが表示されると消火完了です。
-
-- 周辺状況を確認
-- 消火器を確認
-- 消火中
-- 消火完了
-- その他
-
-出力ルール:
-- 上記5つの文字列のいずれかと完全に一致させること(句読点・敬語・説明・理由を一切付けない)
-- 上記に当てはまらない、または映像から行動が判断できない場合は必ず「その他」を出力すること
-- 1つのラベルのみを出力し、複数のラベルを並べないこと
-```
-
-**ユーザープロンプト:**
+**System prompt:**
 
 ```
-このフレーム群で今行われている行動を、システムプロンプトで指定した5つのラベルの
-いずれか1つだけで答えてください。ラベル以外の文字は出力しないでください。
-チェックマークのUIが表示されると消火完了です。
+You are an assistant that watches VR fire-extinguishing training footage and classifies the action happening at that moment.
+Look at the given frames, choose the single best-matching label from the five below,
+and output only that label string. When the check-mark UI appears, extinguishing is complete.
+
+- Checking the surroundings
+- Checking the extinguisher
+- Extinguishing
+- Extinguishing complete
+- Other
+
+Output rules:
+- The output must exactly match one of the five strings above (no punctuation, politeness, explanations, or reasons)
+- If none of the above applies, or the action cannot be determined from the footage, always output "Other"
+- Output only one label; never list multiple labels
 ```
 
-**ポイント:**
+**User prompt:**
 
-- ラベル一覧はシステムプロンプトとユーザープロンプトの両方に書く(直前のユーザー
-  メッセージの指示をモデルが強く優先するため、冗長でも両方に書いた方が遵守率が上がる)
-- 「該当なしは空白で出力」は小型モデルには不安定(空文字列は生成されにくく、何か
-  書こうとしてしまう)。「その他」という具体的な文字列で出力させ、それを見る側で
-  「特筆すべき行動なし」として扱う方が安定する
-- それでもラベル外の文言が出ることがある。4B クラスのモデルは「この集合以外は
-  出力禁止」という制約への忠実さが弱いため。確実に守らせたい場合は、llama-server の
-  GBNF grammar 機能でリクエストに文法制約を付け、出力そのものを7択に強制する方法がある
-- プロンプト設定の「無視するワード」に `その他` を指定すると、「その他」と判定された
-  セグメントはタイムラインに表示されなくなる(該当区間の再生中は何も表示されない)
+```
+Answer with exactly one of the five labels specified in the system prompt for the action happening in these frames.
+Do not output anything other than the label.
+When the check-mark UI appears, extinguishing is complete.
+```
 
-## 処理時間の目安
+**Tips:**
 
-M系チップで 1 セグメントあたり数秒。1 分の動画(3 秒間隔 = 20 セグメント)で 1〜2 分程度。
-セグメント間隔を広げると高速化できる。
+- Write the label list in both the system prompt and the user prompt (the model strongly prioritizes
+  the instructions in the latest user message, so repeating it in both improves compliance, even if redundant)
+- "Output an empty string if nothing applies" is unreliable with small models (they rarely generate an empty
+  string and tend to write something). It is more stable to have them output a concrete string like "Other"
+  and treat it as "nothing notable" on the consumer side
+- Outputs outside the label set can still occur, because 4B-class models are weak at following
+  "never output anything outside this set" constraints. If you need strict compliance, you can use
+  llama-server's GBNF grammar feature to attach a grammar constraint to the request and force the output to be one of the five labels
+- If you set `Other` in "無視するワード" (Ignore words) under the prompt settings, segments classified as "Other"
+  are not shown on the timeline (nothing is displayed while those sections are playing)
+
+## Processing time
+
+On Apple Silicon (M-series) Macs, each segment takes a few seconds. A 1-minute video (3-second interval = 20 segments) takes about 1–2 minutes.
+Increasing the segment interval makes processing faster.
+
+## License
+
+[MIT](LICENSE)
