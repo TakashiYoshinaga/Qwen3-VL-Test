@@ -153,6 +153,13 @@ When the check-mark UI appears, extinguishing is complete.
 On Apple Silicon (M-series) Macs, each segment takes a few seconds. A 1-minute video (3-second interval = 20 segments) takes about 1–2 minutes.
 Increasing the segment interval makes processing faster.
 
+## Using other models
+
+The app only talks to llama-server's OpenAI-compatible API, so any model with image input support works as-is —
+other Qwen models or models from other vendors such as Gemma — just by changing the model in the server launch command.
+Note that Gemma handles the system prompt differently from Qwen, so prompts may behave differently.
+Adjust the prompts as needed.
+
 ## License
 
 [MIT](LICENSE)
