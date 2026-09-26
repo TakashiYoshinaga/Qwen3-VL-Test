@@ -8,28 +8,39 @@
 </head>
 <body>
   <main class="container">
-    <h1>Qwen3-VL 動画アノテーション</h1>
+    <header class="app-header">
+      <h1 data-i18n="title">Qwen3-VL 動画アノテーション</h1>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="ja">日本語</button>
+        <button type="button" data-lang="en">English</button>
+      </div>
+    </header>
 
     <!-- 設定 -->
     <section class="panel" id="settings-panel">
       <div class="settings-row">
         <label>
-          サーバーURL
+          <span data-i18n="serverUrl">サーバーURL</span>
           <input type="text" id="server-url" value="http://localhost:8080">
         </label>
         <label>
-          セグメント間隔(秒)
+          <span data-i18n="segmentInterval">セグメント間隔(秒)</span>
           <input type="number" id="segment-interval" value="3" min="1" max="30" step="1">
         </label>
       </div>
       <div class="settings-row">
         <label class="file-label">
-          動画ファイル
-          <input type="file" id="video-file" accept="video/*">
+          <span data-i18n="videoFile">動画ファイル</span>
+          <!-- ブラウザ標準のボタン文言は変えられないため、input は視覚的に隠して独自表示にする -->
+          <span class="file-picker">
+            <input type="file" id="video-file" class="visually-hidden" accept="video/*">
+            <span class="file-button" data-i18n="chooseFile">ファイルを選択</span>
+            <span id="file-name" class="file-name">選択されていません</span>
+          </span>
         </label>
-        <button id="process-btn" disabled>処理開始</button>
-        <button id="cancel-btn" hidden>キャンセル</button>
-        <button id="export-btn" hidden>JSONダウンロード</button>
+        <button id="process-btn" data-i18n="process" disabled>処理開始</button>
+        <button id="cancel-btn" data-i18n="cancel" hidden>キャンセル</button>
+        <button id="export-btn" data-i18n="export" hidden>JSONダウンロード</button>
       </div>
       <!-- プロンプト設定(表示/非表示を切り替え) -->
       <div class="settings-row">
@@ -37,19 +48,19 @@
       </div>
       <div id="prompt-area" hidden>
         <label class="prompt-label">
-          システムプロンプト(モデルへの指示)
+          <span data-i18n="systemPrompt">システムプロンプト(モデルへの指示)</span>
           <textarea id="system-prompt" rows="5"></textarea>
         </label>
         <label class="prompt-label">
-          ユーザープロンプト(各セグメントの画像に添える質問)
+          <span data-i18n="userPrompt">ユーザープロンプト(各セグメントの画像に添える質問)</span>
           <textarea id="user-prompt" rows="2"></textarea>
         </label>
         <label class="prompt-label">
-          無視するワード(カンマ区切り。出力が一致したセグメントはタイムラインに追加しない)
-          <input type="text" id="ignore-words" placeholder="例: その他, 何も行われていない">
+          <span data-i18n="ignoreWords">無視するワード(カンマ区切り。出力が一致したセグメントはタイムラインに追加しない)</span>
+          <input type="text" id="ignore-words" data-i18n-placeholder="ignoreWordsPlaceholder" placeholder="例: その他, 何も行われていない">
         </label>
         <div class="settings-row">
-          <button id="reset-prompt-btn" type="button" class="secondary">既定に戻す</button>
+          <button id="reset-prompt-btn" type="button" class="secondary" data-i18n="resetPrompt">既定に戻す</button>
         </div>
       </div>
       <!-- 進捗 -->
@@ -72,7 +83,7 @@
 
       <!-- タイムライン(動画の右) -->
       <section class="panel" id="timeline-panel" hidden>
-        <h2>タイムライン</h2>
+        <h2 data-i18n="timeline">タイムライン</h2>
         <!-- 絶対配置のリストを包むことで、リストの中身が枠の高さに影響しないようにする -->
         <div class="timeline-scroll">
           <ol id="timeline-list"></ol>

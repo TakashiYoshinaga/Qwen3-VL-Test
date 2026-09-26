@@ -79,16 +79,18 @@ Open http://localhost:8000 in your browser.
 
 1. Select a video file
 2. Adjust the segment interval if needed (default: 3 seconds)
-3. If needed, edit the system/user prompts under "プロンプト設定" (Prompt settings).
-   Segments whose output matches one of the "無視するワード" (Ignore words, comma-separated)
+3. If needed, edit the system/user prompts under "Show prompt settings".
+   Segments whose output matches one of the "Ignore words" (comma-separated)
    are excluded from both the timeline and the JSON (exact match after stripping trailing punctuation)
-4. Click "処理開始" (Start) and wait for the progress bar to finish
+4. Click "Start" and wait for the progress bar to finish
 5. During playback, the current action description is shown in the annotation area under the video
 6. Click a row in the timeline to jump to that time
-7. Click "JSONダウンロード" (Download JSON) to save an array of `{start, end, text}`
+7. Click "Download JSON" to save an array of `{start, end, text}`
 
-> The UI and the default prompts are in Japanese, so the model answers in Japanese by default.
-> To get English output, rewrite the system/user prompts in English.
+> The UI supports Japanese and English. Use the "日本語 / English" switch in the top right
+> (the initial language follows your browser setting, and your choice is remembered).
+> The default prompts also change with the language, so the model answers in the selected language.
+> Prompts you have edited are kept when you switch languages.
 
 ## How it works
 
@@ -139,7 +141,7 @@ When the check-mark UI appears, extinguishing is complete.
 - Outputs outside the label set can still occur, because 4B-class models are weak at following
   "never output anything outside this set" constraints. If you need strict compliance, you can use
   llama-server's GBNF grammar feature to attach a grammar constraint to the request and force the output to be one of the five labels
-- If you set `Other` in "無視するワード" (Ignore words) under the prompt settings, segments classified as "Other"
+- If you set `Other` in "Ignore words" under the prompt settings, segments classified as "Other"
   are not shown on the timeline (nothing is displayed while those sections are playing)
 
 ## Processing time

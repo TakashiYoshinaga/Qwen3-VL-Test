@@ -2,15 +2,105 @@
 // 動画をセグメントに分割し、各セグメントのフレームを llama-server に送って
 // 「何をしているか」の一言説明を取得し、再生時刻に合わせて表示する。
 
-// UI 未入力時に使う既定のシステムプロンプト(汎用。一人称視点に限らない)
-const DEFAULT_SYSTEM_PROMPT =
-  "これは動画から連続して切り出した複数のフレームです。" +
-  "映っている人が何をしているか(何が行われているか)を日本語で一言(短い文)で答えてください。" +
-  "例:「猫を撫でる」「ドアを開ける」「コップに水を注ぐ」。" +
-  "説明文のみを出力し、前置きや補足は書かないでください。";
+// ---- 多言語対応(日本語 / 英語) ----
+// systemPrompt / userPrompt は UI 未入力時に使う既定プロンプト(汎用。一人称視点に限らない)
+const I18N = {
+  ja: {
+    title: "Qwen3-VL 動画アノテーション",
+    serverUrl: "サーバーURL",
+    segmentInterval: "セグメント間隔(秒)",
+    videoFile: "動画ファイル",
+    chooseFile: "ファイルを選択",
+    noFile: "選択されていません",
+    process: "処理開始",
+    cancel: "キャンセル",
+    export: "JSONダウンロード",
+    showPrompt: "プロンプト設定を表示",
+    hidePrompt: "プロンプト設定を隠す",
+    systemPrompt: "システムプロンプト(モデルへの指示)",
+    userPrompt: "ユーザープロンプト(各セグメントの画像に添える質問)",
+    ignoreWords: "無視するワード(カンマ区切り。出力が一致したセグメントはタイムラインに追加しない)",
+    ignoreWordsPlaceholder: "例: その他, 何も行われていない",
+    resetPrompt: "既定に戻す",
+    timeline: "タイムライン",
+    canceledPartial: "処理をキャンセルしました。途中までのアノテーションは利用できます。",
+    canceled: "処理をキャンセルしました。",
+    done: ({ total, shown, ignored }) =>
+      `処理が完了しました(${total} セグメント中 ${shown} 件を表示` +
+      (ignored > 0 ? `、${ignored} 件を無視` : "") +
+      ")。再生するとアノテーションが表示されます。",
+    connectError: ({ url }) =>
+      "llama-server に接続できません。別のターミナルで以下を実行してください:\n" +
+      "  ./run-server.sh(macOS)/ run-server.bat(Windows)\n" +
+      `(接続先: ${url})`,
+    error: ({ message }) => `エラー: ${message}`,
+    durationError: "動画の長さを取得できませんでした",
+    serverError: ({ status, body }) => `サーバーエラー (HTTP ${status}): ${body}`,
+    defaultSystemPrompt:
+      "これは動画から連続して切り出した複数のフレームです。" +
+      "映っている人が何をしているか(何が行われているか)を日本語で一言(短い文)で答えてください。" +
+      "例:「猫を撫でる」「ドアを開ける」「コップに水を注ぐ」。" +
+      "説明文のみを出力し、前置きや補足は書かないでください。",
+    defaultUserPrompt: "何が行われていますか?一言で。",
+  },
+  en: {
+    title: "Qwen3-VL Video Annotation",
+    serverUrl: "Server URL",
+    segmentInterval: "Segment interval (sec)",
+    videoFile: "Video file",
+    chooseFile: "Choose file",
+    noFile: "No file chosen",
+    process: "Start",
+    cancel: "Cancel",
+    export: "Download JSON",
+    showPrompt: "Show prompt settings",
+    hidePrompt: "Hide prompt settings",
+    systemPrompt: "System prompt (instructions for the model)",
+    userPrompt: "User prompt (question sent with each segment's images)",
+    ignoreWords: "Ignore words (comma-separated; segments whose output matches are not added to the timeline)",
+    ignoreWordsPlaceholder: "e.g. Other, Nothing is happening",
+    resetPrompt: "Reset to default",
+    timeline: "Timeline",
+    canceledPartial: "Processing was canceled. The annotations produced so far are still available.",
+    canceled: "Processing was canceled.",
+    done: ({ total, shown, ignored }) =>
+      `Processing complete (showing ${shown} of ${total} segments` +
+      (ignored > 0 ? `, ${ignored} ignored` : "") +
+      "). Play the video to see the annotations.",
+    connectError: ({ url }) =>
+      "Cannot connect to llama-server. Run the following in another terminal:\n" +
+      "  ./run-server.sh (macOS) / run-server.bat (Windows)\n" +
+      `(target: ${url})`,
+    error: ({ message }) => `Error: ${message}`,
+    durationError: "Could not determine the video duration",
+    serverError: ({ status, body }) => `Server error (HTTP ${status}): ${body}`,
+    defaultSystemPrompt:
+      "These are several consecutive frames extracted from a video. " +
+      "Describe in English, in one short phrase, what the person is doing (what is happening). " +
+      'Examples: "Petting a cat", "Opening a door", "Pouring water into a cup". ' +
+      "Output only the description, with no preamble or extra notes.",
+    defaultUserPrompt: "What is happening? Answer in one short phrase.",
+  },
+};
 
-// UI 未入力時に使う既定のユーザープロンプト(各セグメントの画像に添える質問)
-const DEFAULT_USER_PROMPT = "何が行われていますか?一言で。";
+const LANG_STORAGE_KEY = "qwen3vl-annotation-lang";
+
+function detectInitialLang() {
+  try {
+    const saved = localStorage.getItem(LANG_STORAGE_KEY);
+    if (saved && I18N[saved]) return saved;
+  } catch {
+    // localStorage が使えない環境ではブラウザの言語設定のみで判定
+  }
+  return (navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en";
+}
+
+let lang = detectInitialLang();
+
+function t(key, params) {
+  const value = I18N[lang][key];
+  return typeof value === "function" ? value(params) : value;
+}
 
 const FRAMES_PER_SEGMENT = 3; // セグメントの始・中・終から1枚ずつ
 const FRAME_MAX_SIZE = 512;   // 長辺の縮小サイズ(px)
@@ -20,6 +110,7 @@ const $ = (id) => document.getElementById(id);
 const serverUrlInput = $("server-url");
 const intervalInput = $("segment-interval");
 const fileInput = $("video-file");
+const fileNameText = $("file-name");
 const processBtn = $("process-btn");
 const cancelBtn = $("cancel-btn");
 const exportBtn = $("export-btn");
@@ -39,6 +130,7 @@ const systemPromptInput = $("system-prompt");
 const userPromptInput = $("user-prompt");
 const ignoreWordsInput = $("ignore-words");
 const resetPromptBtn = $("reset-prompt-btn");
+const langButtons = document.querySelectorAll(".lang-switch button");
 
 // ---- 状態 ----
 let videoURL = null;
@@ -60,13 +152,18 @@ function normalizeLabel(s) {
   return s.trim().replace(/[。..、,、!?!?\s]+$/u, "");
 }
 
-function showStatus(text, kind) {
-  statusMessage.textContent = text;
+// 言語切り替え時に表示中のメッセージも訳し直せるよう、キーと引数を保持する
+let lastStatus = null;
+
+function showStatus(key, params, kind) {
+  lastStatus = { key, params, kind };
+  statusMessage.textContent = t(key, params);
   statusMessage.className = kind;
   statusMessage.hidden = false;
 }
 
 function clearStatus() {
+  lastStatus = null;
   statusMessage.hidden = true;
   statusMessage.textContent = "";
 }
@@ -75,6 +172,7 @@ function clearStatus() {
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (!file) return;
+  fileNameText.textContent = file.name;
 
   if (videoURL) URL.revokeObjectURL(videoURL);
   videoURL = URL.createObjectURL(file);
@@ -121,7 +219,7 @@ async function ensureMetadata() {
     extractVideo.currentTime = 0;
   }
   if (!isFinite(extractVideo.duration) || extractVideo.duration <= 0) {
-    throw new Error("動画の長さを取得できませんでした");
+    throw new Error(t("durationError"));
   }
 }
 
@@ -167,7 +265,7 @@ async function describeSegment(serverUrl, systemPrompt, userPrompt, frames) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`サーバーエラー (HTTP ${res.status}): ${body.slice(0, 200)}`);
+    throw new Error(t("serverError", { status: res.status, body: body.slice(0, 200) }));
   }
   const json = await res.json();
   return (json.choices?.[0]?.message?.content ?? "").trim();
@@ -207,8 +305,8 @@ processBtn.addEventListener("click", async () => {
 
   const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
   const interval = Math.max(1, Number(intervalInput.value) || 3);
-  const systemPrompt = systemPromptInput.value.trim() || DEFAULT_SYSTEM_PROMPT;
-  const userPrompt = userPromptInput.value.trim() || DEFAULT_USER_PROMPT;
+  const systemPrompt = systemPromptInput.value.trim() || t("defaultSystemPrompt");
+  const userPrompt = userPromptInput.value.trim() || t("defaultUserPrompt");
   const ignoreWords = ignoreWordsInput.value
     .split(",")
     .map(normalizeLabel)
@@ -279,27 +377,25 @@ processBtn.addEventListener("click", async () => {
       progressText.textContent = `${i + 1} / ${segments.length}`;
     }
 
-    const ignoredNote = ignoredCount > 0 ? `、${ignoredCount} 件を無視` : "";
     if (cancelRequested) {
-      showStatus("処理をキャンセルしました。途中までのアノテーションは利用できます。", "info");
+      showStatus("canceledPartial", null, "info");
     } else {
-      showStatus(`処理が完了しました(${segments.length} セグメント中 ${annotations.length} 件を表示${ignoredNote})。再生するとアノテーションが表示されます。`, "info");
+      showStatus(
+        "done",
+        { total: segments.length, shown: annotations.length, ignored: ignoredCount },
+        "info"
+      );
     }
     if (annotations.length > 0) exportBtn.hidden = false;
   } catch (err) {
     if (err.name === "AbortError") {
-      showStatus("処理をキャンセルしました。", "info");
+      showStatus("canceled", null, "info");
       if (annotations.length > 0) exportBtn.hidden = false;
     } else if (err instanceof TypeError) {
       // fetch の接続失敗
-      showStatus(
-        "llama-server に接続できません。別のターミナルで以下を実行してください:\n" +
-          "  ./run-server.sh(macOS)/ run-server.bat(Windows)\n" +
-          `(接続先: ${serverUrl})`,
-        "error"
-      );
+      showStatus("connectError", { url: serverUrl }, "error");
     } else {
-      showStatus(`エラー: ${err.message}`, "error");
+      showStatus("error", { message: err.message }, "error");
     }
   } finally {
     processing = false;
@@ -350,19 +446,57 @@ exportBtn.addEventListener("click", () => {
 });
 
 // ---- プロンプト設定 ----
-systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
-userPromptInput.value = DEFAULT_USER_PROMPT;
+function updateTogglePromptLabel() {
+  togglePromptBtn.textContent = t(promptArea.hidden ? "showPrompt" : "hidePrompt");
+}
 
 togglePromptBtn.addEventListener("click", () => {
-  const willShow = promptArea.hidden;
-  promptArea.hidden = !willShow;
-  togglePromptBtn.textContent = willShow
-    ? "プロンプト設定を隠す"
-    : "プロンプト設定を表示";
+  promptArea.hidden = !promptArea.hidden;
+  updateTogglePromptLabel();
 });
 
 resetPromptBtn.addEventListener("click", () => {
-  systemPromptInput.value = DEFAULT_SYSTEM_PROMPT;
-  userPromptInput.value = DEFAULT_USER_PROMPT;
+  systemPromptInput.value = t("defaultSystemPrompt");
+  userPromptInput.value = t("defaultUserPrompt");
   ignoreWordsInput.value = "";
 });
+
+// ---- 言語切り替え ----
+function applyLang(newLang) {
+  // 既定のまま(または空)のプロンプトだけ新しい言語の既定に差し替え、ユーザーの編集内容は残す
+  const prev = I18N[lang];
+  const next = I18N[newLang];
+  const sys = systemPromptInput.value.trim();
+  const usr = userPromptInput.value.trim();
+  if (!sys || sys === prev.defaultSystemPrompt) systemPromptInput.value = next.defaultSystemPrompt;
+  if (!usr || usr === prev.defaultUserPrompt) userPromptInput.value = next.defaultUserPrompt;
+
+  lang = newLang;
+  document.documentElement.lang = newLang;
+  document.title = t("title");
+  for (const el of document.querySelectorAll("[data-i18n]")) {
+    el.textContent = t(el.dataset.i18n);
+  }
+  for (const el of document.querySelectorAll("[data-i18n-placeholder]")) {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  }
+  updateTogglePromptLabel();
+  if (!fileInput.files[0]) fileNameText.textContent = t("noFile");
+  if (lastStatus) showStatus(lastStatus.key, lastStatus.params, lastStatus.kind);
+  for (const btn of langButtons) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.lang === newLang));
+  }
+}
+
+for (const btn of langButtons) {
+  btn.addEventListener("click", () => {
+    applyLang(btn.dataset.lang);
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch {
+      // 保存できなくても表示の切り替えには影響しない
+    }
+  });
+}
+
+applyLang(lang);
